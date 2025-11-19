@@ -1,115 +1,78 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { formatRupiah } from '../../../lib/utils';
-// Tambahkan icon Trash2 untuk tombol hapus
-import { Trash2, Loader2 } from 'lucide-react'; 
+import { Trash2, Loader2, Wallet, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'; 
 
 export default function KasRTPage() {
     const [kas, setKas] = useState([]);
     const [form, setForm] = useState({ tipe: 'MASUK', nominal: '', keterangan: '' });
     const [loading, setLoading] = useState(false);
-    const [deletingId, setDeletingId] = useState(null); // State untuk loading saat menghapus
+    const [deletingId, setDeletingId] = useState(null);
 
-    // Fetch Data
-    const fetchKas = () => fetch('/api/kas')
-        .then(r => r.json())
-        .then(r => setKas(r.data || []));
-    
+    const fetchKas = () => fetch('/api/kas').then(r => r.json()).then(r => setKas(r.data || []));
     useEffect(() => { fetchKas() }, []);
 
-    // Handle Submit (Tambah)
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        
-        await fetch('/api/kas', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(form) 
-        });
-        
-        setForm({ tipe: 'MASUK', nominal: '', keterangan: '' }); 
-        fetchKas(); 
-        setLoading(false);
+        await fetch('/api/kas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(form) });
+        setForm({ tipe: 'MASUK', nominal: '', keterangan: '' }); fetchKas(); setLoading(false);
     };
 
-    // === FUNGSI BARU: HAPUS DATA ===
     const handleDelete = async (id) => {
-        // Konfirmasi dulu biar gak salah klik
-        if (!confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
-
-        setDeletingId(id); // Nyalakan loading di tombol hapus spesifik
-
-        try {
-            const res = await fetch(`/api/kas?id=${id}`, {
-                method: 'DELETE',
-            });
-
-            if (res.ok) {
-                fetchKas(); // Refresh tabel otomatis
-            } else {
-                alert("Gagal menghapus data");
-            }
-        } catch (error) {
-            alert("Terjadi kesalahan sistem");
-        }
-        setDeletingId(null); // Matikan loading
+        if (!confirm("Hapus data ini?")) return;
+        setDeletingId(id);
+        const res = await fetch(`/api/kas?id=${id}`, { method: 'DELETE' });
+        if (res.ok) fetchKas();
+        setDeletingId(null);
     };
 
-    // Hitung Saldo
     const saldo = kas.reduce((acc, curr) => curr.tipe === 'MASUK' ? acc + curr.nominal : acc - curr.nominal, 0);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* KOLOM KIRI: TABEL & SALDO */}
             <div className="lg:col-span-2 space-y-6">
-                <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Buku Kas RT</h1>
-                        <p className="text-slate-500 text-sm">Pencatatan keuangan transparan</p>
+                {/* SALDO CARD */}
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl p-8 text-white shadow-xl flex justify-between items-center relative overflow-hidden">
+                    <div className="relative z-10">
+                        <p className="text-emerald-100 text-sm font-medium uppercase tracking-widest mb-2">Total Saldo Kas</p>
+                        <h2 className="text-4xl font-extrabold">{formatRupiah(saldo)}</h2>
+                        <p className="text-emerald-200 text-sm mt-2 opacity-80">Dana operasional RT yang tersedia</p>
                     </div>
-                    <div className={`px-6 py-3 rounded-xl shadow-lg text-right text-white ${saldo >= 0 ? 'bg-emerald-600' : 'bg-red-600'}`}>
-                        <p className="text-xs opacity-80 uppercase tracking-wider">Saldo Saat Ini</p>
-                        <p className="text-2xl font-bold">{formatRupiah(saldo)}</p>
+                    <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm relative z-10">
+                        <Wallet size={40} className="text-white" />
                     </div>
+                    {/* Background Pattern */}
+                    <div className="absolute -right-10 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4 bg-slate-50 border-b font-bold text-slate-600 flex justify-between items-center">
-                        <span>Riwayat Transaksi</span>
-                        <span className="text-xs font-normal text-slate-400">Total: {kas.length} Transaksi</span>
+                {/* TRANSAKSI LIST */}
+                <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-800 text-lg">Riwayat Transaksi</h3>
+                        <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">{kas.length} Data</span>
                     </div>
-                    
-                    <div className="max-h-[600px] overflow-y-auto">
+                    <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
                         {kas.length === 0 ? (
-                            <div className="p-8 text-center text-slate-400">Belum ada data transaksi.</div>
+                            <div className="p-10 text-center text-slate-400">Belum ada transaksi.</div>
                         ) : (
                             kas.map((item, idx) => (
-                                <div key={idx} className="flex justify-between items-center p-4 border-b last:border-0 hover:bg-slate-50 transition group">
-                                    {/* Info Transaksi */}
-                                    <div className="flex-1">
-                                        <p className="font-bold text-slate-700">{item.keterangan}</p>
-                                        <p className="text-xs text-slate-400">{new Date(item.tanggal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                    </div>
-
-                                    {/* Nominal & Tombol Hapus */}
+                                <div key={idx} className="flex items-center justify-between p-5 border-b border-slate-50 hover:bg-slate-50 transition group">
                                     <div className="flex items-center gap-4">
-                                        <span className={`font-bold px-3 py-1 rounded-lg text-sm ${item.tipe === 'MASUK' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <div className={`p-3 rounded-xl ${item.tipe === 'MASUK' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                            {item.tipe === 'MASUK' ? <ArrowUpCircle size={20}/> : <ArrowDownCircle size={20}/>}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-700 text-sm md:text-base">{item.keterangan}</p>
+                                            <p className="text-xs text-slate-400 mt-1">{new Date(item.tanggal).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className={`font-bold ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-red-600'}`}>
                                             {item.tipe === 'MASUK' ? '+' : '-'} {formatRupiah(item.nominal)}
                                         </span>
-                                        
-                                        {/* Tombol Delete (Hanya muncul saat hover atau di mobile) */}
-                                        <button 
-                                            onClick={() => handleDelete(item._id)}
-                                            disabled={deletingId === item._id}
-                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                                            title="Hapus Data"
-                                        >
-                                            {deletingId === item._id ? (
-                                                <Loader2 size={18} className="animate-spin text-red-500" />
-                                            ) : (
-                                                <Trash2 size={18} />
-                                            )}
+                                        <button onClick={() => handleDelete(item._id)} disabled={deletingId === item._id} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition opacity-0 group-hover:opacity-100">
+                                            {deletingId === item._id ? <Loader2 size={16} className="animate-spin"/> : <Trash2 size={16}/>}
                                         </button>
                                     </div>
                                 </div>
@@ -119,34 +82,39 @@ export default function KasRTPage() {
                 </div>
             </div>
 
-            {/* KOLOM KANAN: FORM INPUT */}
+            {/* FORM INPUT */}
             <div>
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 sticky top-6">
-                    <h3 className="font-bold text-lg mb-4 text-slate-800 border-b pb-2">Catat Transaksi Baru</h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 sticky top-8">
+                    <h3 className="font-bold text-xl text-slate-800 mb-6">Catat Transaksi</h3>
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Jenis Transaksi</label>
-                            <select className="w-full p-3 rounded-lg border bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" 
-                                value={form.tipe} onChange={e=>setForm({...form, tipe: e.target.value})}>
-                                <option value="MASUK">🟢 Pemasukan (Iuran/Donasi)</option>
-                                <option value="KELUAR">🔴 Pengeluaran (Bansos/Ops)</option>
-                            </select>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Jenis</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button type="button" onClick={() => setForm({...form, tipe: 'MASUK'})} 
+                                    className={`py-3 rounded-xl text-sm font-bold transition ${form.tipe === 'MASUK' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
+                                    Pemasukan
+                                </button>
+                                <button type="button" onClick={() => setForm({...form, tipe: 'KELUAR'})}
+                                    className={`py-3 rounded-xl text-sm font-bold transition ${form.tipe === 'KELUAR' ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-slate-100 text-slate-500'}`}>
+                                    Pengeluaran
+                                </button>
+                            </div>
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Nominal (Rp)</label>
-                            <input type="number" placeholder="0" className="w-full p-3 rounded-lg border bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" 
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nominal</label>
+                            <input type="number" placeholder="0" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none bg-slate-50" 
                                 value={form.nominal} onChange={e=>setForm({...form, nominal: e.target.value})} required />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Keterangan</label>
-                            <textarea placeholder="Contoh: Iuran Warga Bulan Mei" className="w-full p-3 rounded-lg border bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500" rows="3"
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Keterangan</label>
+                            <textarea placeholder="Contoh: Iuran Warga" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none bg-slate-50" rows="3"
                                 value={form.keterangan} onChange={e=>setForm({...form, keterangan: e.target.value})} required />
                         </div>
 
-                        <button disabled={loading} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-md">
-                            {loading ? 'Menyimpan...' : 'Catat Transaksi'}
+                        <button disabled={loading} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg">
+                            {loading ? 'Menyimpan...' : 'Simpan Transaksi'}
                         </button>
                     </form>
                 </div>

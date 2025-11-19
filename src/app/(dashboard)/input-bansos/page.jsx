@@ -1,28 +1,16 @@
 "use client";
-import { useState, useEffect } from 'react';
-// PERBAIKAN DI SINI: Gunakan ../../../ agar file utils pasti ketemu
-import { formatRupiah, cekKelayakanBansos } from '../../../lib/utils';
-import { Save, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Briefcase, Save, User, DollarSign, Users } from 'lucide-react'; 
 import { useRouter } from 'next/navigation';
 
 export default function InputPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    nama: '', nik: '', alamat_rt: '01', penghasilan: '', tanggungan: ''
+    nama: '', nik: '', alamat_rt: '01', 
+    penghasilan: '', tanggungan: '',
+    nama_pekerjaan: '', status_pekerjaan: '1'
   });
-  
-  const [statusSystem, setStatusSystem] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // Real-time Logic Calculator
-  useEffect(() => {
-    if (formData.penghasilan) {
-      const result = cekKelayakanBansos(Number(formData.penghasilan));
-      setStatusSystem(result);
-    } else {
-      setStatusSystem(null);
-    }
-  }, [formData.penghasilan]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +22,7 @@ export default function InputPage() {
     });
 
     if (res.ok) {
-      alert('Data berhasil disimpan!');
+      alert('Data tersimpan!');
       router.push('/dashboard');
     } else {
       alert('Gagal menyimpan data.');
@@ -44,94 +32,87 @@ export default function InputPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Input Data Calon Penerima (Level RT)</h1>
+      {/* HEADER PAGE */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold text-slate-800">Input Data Warga</h1>
+        <p className="text-slate-500 mt-2">Pastikan data yang dimasukkan sesuai dengan KTP & KK terbaru.</p>
+      </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* FORM INPUT */}
-        <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+      <div className="bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* SECTION 1: IDENTITAS */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+                <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><User size={20}/></div> Identitas Diri
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputGroup label="Nama Lengkap" placeholder="Sesuai KTP" value={formData.nama} onChange={e => setFormData({...formData, nama: e.target.value})} />
+                <InputGroup label="Nomor Induk Kependudukan (NIK)" placeholder="16 Digit Angka" value={formData.nik} onChange={e => setFormData({...formData, nik: e.target.value})} />
                 <div>
-                    <label className="label-text">Nama Lengkap</label>
-                    <input type="text" required className="input-field" 
-                        onChange={(e) => setFormData({...formData, nama: e.target.value})} />
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Alamat RT</label>
+                    <select className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition bg-slate-50/50"
+                        onChange={(e) => setFormData({...formData, alamat_rt: e.target.value})}>
+                        <option value="01">RT 01 - RW 05</option>
+                        <option value="02">RT 02 - RW 05</option>
+                        <option value="03">RT 03 - RW 05</option>
+                    </select>
                 </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: EKONOMI */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+                <div className="p-2 bg-green-100 rounded-lg text-green-600"><DollarSign size={20}/></div> Ekonomi & Keluarga
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputGroup label="Penghasilan Bulanan (Rp)" placeholder="Contoh: 1500000" type="number" value={formData.penghasilan} onChange={e => setFormData({...formData, penghasilan: e.target.value})} />
+                <InputGroup label="Jumlah Tanggungan" placeholder="Jumlah orang dalam KK" type="number" value={formData.tanggungan} onChange={e => setFormData({...formData, tanggungan: e.target.value})} />
+            </div>
+          </div>
+
+          {/* SECTION 3: PEKERJAAN */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+                <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><Briefcase size={20}/></div> Pekerjaan
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputGroup label="Nama Pekerjaan (Spesifik)" placeholder="Contoh: Buruh Cuci" value={formData.nama_pekerjaan} onChange={e => setFormData({...formData, nama_pekerjaan: e.target.value})} />
                 <div>
-                    <label className="label-text">NIK (KTP)</label>
-                    <input type="text" required className="input-field" 
-                        onChange={(e) => setFormData({...formData, nik: e.target.value})} />
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Golongan Pekerjaan (Untuk Sistem)</label>
+                    <select className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition bg-slate-50/50"
+                        onChange={(e) => setFormData({...formData, status_pekerjaan: e.target.value})}>
+                        <option value="1">Gol 1 - PNS / Tetap (Skor Rendah)</option>
+                        <option value="2">Gol 2 - Kontrak / Swasta</option>
+                        <option value="3">Gol 3 - Buruh / Serabutan</option>
+                        <option value="4">Gol 4 - Pengangguran (Skor Tinggi)</option>
+                    </select>
                 </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="label-text">Penghasilan Bulanan (Rp)</label>
-                    <input type="number" required className="input-field" placeholder="Contoh: 2500000"
-                        onChange={(e) => setFormData({...formData, penghasilan: e.target.value})} />
-                </div>
-                <div>
-                    <label className="label-text">Jumlah Tanggungan</label>
-                    <input type="number" required className="input-field" 
-                        onChange={(e) => setFormData({...formData, tanggungan: e.target.value})} />
-                </div>
-            </div>
-
-            <div>
-                <label className="label-text">Alamat RT</label>
-                <select className="input-field" onChange={(e) => setFormData({...formData, alamat_rt: e.target.value})}>
-                    <option value="01">RT 01</option>
-                    <option value="02">RT 02</option>
-                    <option value="03">RT 03</option>
-                </select>
-            </div>
-
-            <div className="pt-4">
-                <button type="submit" disabled={loading || statusSystem?.status === 'TIDAK_LAYAK'}
-                    className={`w-full py-4 rounded-xl font-bold text-white flex justify-center items-center gap-2 shadow-md transition-all
-                    ${statusSystem?.status === 'TIDAK_LAYAK' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
-                    `}>
-                    {loading ? 'Menyimpan...' : <><Save size={20}/> Simpan Data</>}
-                </button>
-            </div>
-          </form>
-        </div>
-
-        {/* SIDEBAR ANALISA SYSTEM */}
-        <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 sticky top-6">
-                <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2">
-                    <AlertTriangle className="text-yellow-500" size={20}/> Analisis Sistem
-                </h3>
-                
-                <div className="mb-4">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">Input Gaji</p>
-                    <p className="text-2xl font-bold text-slate-800">
-                        {formData.penghasilan ? formatRupiah(formData.penghasilan) : 'Rp 0'}
-                    </p>
-                </div>
-
-                {statusSystem ? (
-                    <div className={`p-4 rounded-xl border animate-pulse-once ${statusSystem.color}`}>
-                        <div className="flex items-start gap-3">
-                            {statusSystem.status === 'LAYAK' ? <CheckCircle size={24}/> : <XCircle size={24}/>}
-                            <div>
-                                <p className="font-bold text-sm">{statusSystem.label}</p>
-                                <p className="text-xs mt-1 leading-relaxed opacity-90">{statusSystem.message}</p>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="p-4 bg-slate-50 rounded-xl text-sm text-slate-500 text-center italic">
-                        Masukkan nominal gaji untuk melihat analisis kelayakan.
-                    </div>
-                )}
-
-                <div className="mt-4 text-xs text-slate-400 border-t pt-4">
-                    * Sistem otomatis memblokir tombol simpan jika status <span className="text-red-500 font-bold">TIDAK LAYAK</span>.
-                </div>
-            </div>
-        </div>
+          <div className="pt-6">
+            <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex justify-center items-center gap-2">
+               {loading ? 'Menyimpan...' : <><Save size={20}/> Simpan Data Warga</>}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 }
+
+const InputGroup = ({ label, type="text", placeholder, value, onChange }) => (
+    <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-2">{label}</label>
+        <input 
+            type={type} 
+            required 
+            placeholder={placeholder}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition bg-slate-50/50" 
+            onChange={onChange}
+            value={value}
+        />
+    </div>
+);
