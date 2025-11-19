@@ -11,27 +11,51 @@
     @apply block text-sm font-medium text-slate-700 mb-2;
   }
 }
+
 @media print {
- 
+  /* Sembunyikan elemen web standar */
   body * {
     visibility: hidden;
   }
 
- 
-  .print\:block, .print\:block * {
-    visibility: visible;
+  /* Tampilkan hanya area konten utama */
+  .print\:block, .print\:block *, 
+  table, table *, 
+  tbody, th, td, tr {
+    visibility: visible !important;
   }
-  .print\:block {
+
+  /* Reset posisi agar pas di kertas A4 */
+  .bg-white {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 20px; 
+    padding: 0;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hilangkan Sidebar, Navbar, dan Tombol */
+  aside, nav, button, .btn-action, a, .print\:hidden {
+    display: none !important;
   }
   
+  /* Pastikan tabel tercetak dengan border hitam */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
   
-  nav, aside, button, .bg-slate-900 {
-    display: none !important;
+  th, td {
+    border: 1px solid black !important;
+    padding: 8px !important;
+    color: black !important;
+  }
+
+  /* Hapus warna background di tabel saat print agar hemat tinta */
+  tr {
+    background-color: white !important;
   }
 }

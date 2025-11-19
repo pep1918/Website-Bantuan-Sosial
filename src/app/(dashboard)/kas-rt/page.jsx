@@ -109,7 +109,7 @@ export default function KasRTPage() {
 
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Keterangan</label>
-                            <textarea placeholder="Contoh: Iuran Warga" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none bg-slate-50" rows="3"
+                            <textarea placeholder="" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none bg-slate-50" rows="3"
                                 value={form.keterangan} onChange={e=>setForm({...form, keterangan: e.target.value})} required />
                         </div>
 

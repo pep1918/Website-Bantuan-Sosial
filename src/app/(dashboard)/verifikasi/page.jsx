@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-// Menggunakan jalur manual 3 tingkat ke atas
 import { formatRupiah } from '../../../lib/utils'; 
-import { Calculator, FileDown, Printer, Filter, CheckCircle, XCircle, User, Layers, Send } from 'lucide-react';
+import { Calculator, Trophy, FileDown, Printer, Filter, CheckCircle, XCircle, User, Layers } from 'lucide-react';
 import * as XLSX from 'xlsx'; 
 
 export default function VerifikasiPage() {
@@ -18,103 +17,72 @@ export default function VerifikasiPage() {
     fetch('/api/warga')
       .then(res => res.json())
       .then(res => {
-         // Sort otomatis berdasarkan Skor SAW tertinggi
+         // Urutkan berdasarkan SKOR tertinggi
          const sorted = (res.data || []).sort((a, b) => b.skor_saw - a.skor_saw);
          setDataWarga(sorted);
          setFilteredData(sorted);
          setLoading(false);
-      })
-      .catch(err => console.error("Gagal ambil data:", err));
+      });
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  // 2. FILTER LOGIC
+  // 2. FILTER RT
   useEffect(() => {
     if (filterRT === 'ALL') setFilteredData(dataWarga);
     else setFilteredData(dataWarga.filter(w => w.alamat_rt === filterRT));
   }, [filterRT, dataWarga]);
 
-  // 3. HITUNG SAW
+  // 3. LOGIKA BUTTON HITUNG SAW
   const hitungSAW = async () => {
     setCalculating(true);
-    // Pastikan path API ini benar (manual import di route.js)
-    const res = await fetch('/api/hitung-saw', { method: 'POST' });
-    if (res.ok) { 
-        alert("Perhitungan Selesai! Data diurutkan berdasarkan prioritas."); 
-        fetchData(); 
-    } else {
-        alert("Gagal menghitung.");
-    }
+    try {
+        const res = await fetch('/api/hitung-saw', { method: 'POST' });
+        if (res.ok) { 
+            alert("✅ Perhitungan Selesai! Data telah diurutkan."); 
+            fetchData(); // Refresh tabel otomatis
+        } else {
+            alert("❌ Gagal menghitung. Cek server.");
+        }
+    } catch (e) { alert("Error koneksi."); }
     setCalculating(false);
   };
 
-  // 4. EXPORT EXCEL
+  // 4. LOGIKA BUTTON PDF (PRINT LAPORAN)
+  const exportPDF = () => {
+    // Fungsi ini akan memicu tampilan cetak browser
+    // CSS @media print akan mengatur tampilannya
+    window.print();
+  };
+
+  // 5. LOGIKA BUTTON EXCEL
   const exportToExcel = () => {
     const dataToExport = filteredData.map((w, i) => ({
-        "Ranking": i + 1, 
-        "Nama Lengkap": w.nama, 
+        "Rank": i + 1, 
+        "Nama": w.nama, 
         "NIK": `'${w.nik}`, 
         "RT": w.alamat_rt, 
-        "Penghasilan": w.penghasilan, 
+        "Penghasilan": w.penghasilan,
         "Skor SAW": w.skor_saw, 
         "Status": w.status_kelayakan
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data Bansos");
-    XLSX.writeFile(workbook, `Laporan_Bansos_RT${filterRT}_${new Date().toISOString().slice(0,10)}.xlsx`);
-  };
-
-  // 5. EXPORT PDF
-  const exportPDF = () => window.print();
-
-  // 6. FUNGSI SALURKAN BANTUAN (Auto create history)
-  const handleSalurkan = async (warga) => {
-    const konfirmasi = confirm(`Salurkan bantuan kepada ${warga.nama}? \nData akan dicatat di Riwayat Penyaluran.`);
-    if (!konfirmasi) return;
-
-    // Siapkan data untuk dicatat di riwayat
-    const dataPenyaluran = {
-        nama_penerima: warga.nama,
-        nik_penerima: warga.nik,
-        alamat_rt: warga.alamat_rt,
-        jenis_bantuan: "BLT Dana Desa", // Bisa dibuat dinamis nanti
-        nominal: 300000, // Nominal standar, bisa diubah
-        petugas: "Admin Verifikator", // Harusnya ambil dari session user
-        keterangan: "Penyaluran Tahap 1 via Sistem SAW"
-    };
-
-    try {
-        // Kirim ke API Penyaluran
-        const res = await fetch('/api/penyaluran', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(dataPenyaluran)
-        });
-
-        if(res.ok) {
-            alert("Bantuan BERHASIL disalurkan dan tercatat di Riwayat!");
-            // Di sini Anda bisa menambahkan logika untuk update status warga jadi 'DITERIMA' jika perlu
-        } else {
-            alert("Gagal mencatat penyaluran.");
-        }
-    } catch (error) {
-        console.error("Error salur:", error);
-    }
+    XLSX.writeFile(workbook, "Laporan_SPK_SAW.xlsx");
   };
 
   return (
-    <div className="space-y-8">
-      {/* HEADER PAGE */}
-      <div className="flex flex-col lg:flex-row justify-between items-end gap-6 print:hidden">
+    <div>
+      {/* --- HEADER & TOMBOL (AKAN HILANG SAAT PRINT) --- */}
+      <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-8 print:hidden">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Verifikasi & Ranking SAW</h1>
             <p className="text-slate-500 mt-2 text-sm">Sistem Pendukung Keputusan prioritas penerima bantuan.</p>
           </div>
           
           <div className="flex flex-wrap gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
-             {/* FILTER DROPDOWN */}
+             {/* Filter Dropdown */}
              <div className="flex items-center px-4 border-r border-slate-200">
                 <Filter size={16} className="text-slate-400 mr-3"/>
                 <select className="bg-transparent outline-none text-sm font-semibold text-slate-700 min-w-[100px] cursor-pointer" 
@@ -125,135 +93,117 @@ export default function VerifikasiPage() {
                     <option value="03">RT 03</option>
                 </select>
              </div>
-
-             <ActionButton onClick={exportToExcel} icon={<FileDown size={18}/>} label="Excel" color="text-green-600 hover:bg-green-50"/>
-             <ActionButton onClick={exportPDF} icon={<Printer size={18}/>} label="PDF" color="text-slate-600 hover:bg-slate-100"/>
-             <button onClick={hitungSAW} disabled={calculating} className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 animate-pulse-once">
-                {calculating ? 'Processing...' : <><Calculator size={18}/> Hitung SAW</>}
+             
+             {/* Buttons */}
+             <button onClick={exportToExcel} className="btn-action bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2"><FileDown size={16}/> Excel</button>
+             <button onClick={exportPDF} className="btn-action bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2"><Printer size={16}/> PDF</button>
+             <button onClick={hitungSAW} disabled={calculating} className="btn-action bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 animate-pulse-once">
+                {calculating ? 'Menghitung...' : <><Calculator size={16}/> Hitung SAW</>}
              </button>
           </div>
       </div>
       
-      {/* TABEL DATA */}
+      {/* --- CONTAINER UTAMA --- */}
       <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden print:shadow-none print:border-none">
         
-        {/* KOP SURAT KHUSUS PRINT */}
-        <div className="hidden print:block text-center mb-8 pt-4 border-b-2 border-black pb-4">
-            <h2 className="text-2xl font-bold uppercase">Laporan Rekomendasi Penerima Bansos</h2>
-            <p className="text-sm">Periode: {new Date().toLocaleDateString()} | Filter: {filterRT}</p>
+        {/* --- KOP SURAT (KHUSUS PDF/PRINT) --- */}
+        <div className="hidden print:block text-center mb-4 pt-4 pb-4 border-b-2 border-black">
+            <h2 className="text-2xl font-bold uppercase text-black">PEMERINTAH DESA MAJU JAYA</h2>
+            <p className="text-sm text-black">Jl. Merdeka No. 45, Kecamatan Sejahtera, Kabupaten Makmur</p>
+            <h3 className="text-xl font-bold uppercase mt-4 underline text-black">LAPORAN HASIL PERANGKINGAN BANSOS (SAW)</h3>
+            <p className="text-sm text-black mt-1">Filter Wilayah: {filterRT === 'ALL' ? 'Semua RT' : `RT ${filterRT}`} | Tanggal Cetak: {new Date().toLocaleDateString()}</p>
         </div>
 
+        {/* --- TABEL DATA --- */}
         <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
             <thead>
-                <tr className="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 print:border-black print:text-black">
-                    <th className="p-6 font-bold text-center w-20">Rank</th>
-                    <th className="p-6 font-bold">Identitas Penerima</th>
-                    <th className="p-6 font-bold">Kriteria Penilaian</th>
-                    <th className="p-6 font-bold text-center">Skor Akhir (V)</th>
-                    <th className="p-6 font-bold text-center">Status</th>
+                <tr className="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 print:bg-gray-200 print:text-black print:border-black">
+                    <th className="p-6 font-bold text-center w-20 print:border print:border-black">Rank</th>
+                    <th className="p-6 font-bold print:border print:border-black">Identitas Penerima</th>
+                    <th className="p-6 font-bold print:border print:border-black">Kriteria Penilaian</th>
+                    <th className="p-6 font-bold text-center print:border print:border-black">Skor Akhir (V)</th>
+                    <th className="p-6 font-bold text-center print:border print:border-black">Status</th>
                     <th className="p-6 font-bold text-center print:hidden">Aksi</th>
                 </tr>
             </thead>
             <tbody className="text-sm divide-y divide-slate-100 print:divide-black">
-                {filteredData.length === 0 ? 
-                    <tr><td colSpan="6" className="text-center p-12 text-slate-400 italic">Data belum tersedia. Silakan input data warga atau reset filter.</td></tr> :
-                    filteredData.map((warga, index) => (
+                {loading ? <tr><td colSpan="6" className="p-10 text-center">Loading data...</td></tr> :
+                 filteredData.length === 0 ? <tr><td colSpan="6" className="p-10 text-center text-slate-400">Data kosong.</td></tr> :
+                 filteredData.map((warga, index) => (
                     <tr key={warga._id} className={`group hover:bg-slate-50/80 transition duration-200 ${index < 3 ? 'bg-amber-50/40 print:bg-white' : ''}`}>
                         
-                        {/* KOLOM RANKING */}
-                        <td className="p-6 text-center">
+                        {/* RANKING */}
+                        <td className="p-6 text-center print:border print:border-black print:text-black">
                             {index < 3 ? 
-                                <div className="w-8 h-8 mx-auto bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-bold shadow-sm border border-amber-200">{index+1}</div> 
-                                : <span className="font-semibold text-slate-400">#{index+1}</span>}
+                                <div className="w-8 h-8 mx-auto bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-bold shadow-sm border border-amber-200 print:border-none print:bg-transparent print:text-black">{index+1}</div> 
+                                : <span className="font-semibold text-slate-400 print:text-black">#{index+1}</span>}
                         </td>
 
-                        {/* KOLOM IDENTITAS */}
-                        <td className="p-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 print:hidden"><User size={20}/></div>
-                                <div>
-                                    <div className="font-bold text-slate-800 text-base uppercase">{warga.nama}</div>
-                                    <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2 print:text-black">
-                                        <span>NIK: {warga.nik}</span>
-                                        <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-bold print:border print:border-black">RT {warga.alamat_rt}</span>
-                                    </div>
+                        {/* IDENTITAS */}
+                        <td className="p-6 print:border print:border-black">
+                            <div className="font-bold text-slate-800 text-base uppercase print:text-black">{warga.nama}</div>
+                            <div className="text-xs text-slate-400 mt-0.5 print:text-black">
+                                NIK: {warga.nik} &bull; <span className="font-bold">RT {warga.alamat_rt}</span>
+                            </div>
+                        </td>
+                        
+                        {/* KRITERIA */}
+                        <td className="p-6 text-xs text-slate-600 print:text-black print:border print:border-black">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                <div className="flex justify-between"><span>Gaji:</span> <b>{formatRupiah(warga.penghasilan)}</b></div>
+                                <div className="flex justify-between"><span>Tanggungan:</span> <b>{warga.tanggungan} Org</b></div>
+                                <div className="col-span-2 mt-1 pt-1 border-t border-slate-100 print:border-black">
+                                    <span>Kerja: {warga.nama_pekerjaan || '-'} (Nilai: {warga.status_pekerjaan})</span>
                                 </div>
                             </div>
                         </td>
 
-                        {/* KOLOM KRITERIA */}
-                        <td className="p-6">
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600 print:text-black">
-                                <div className="flex justify-between"><span>Gaji:</span> <span className="font-mono font-medium">{formatRupiah(warga.penghasilan)}</span></div>
-                                <div className="flex justify-between"><span>Tanggungan:</span> <span className="font-medium">{warga.tanggungan} Org</span></div>
-                                <div className="flex justify-between col-span-2 pt-1 border-t border-slate-100 mt-1"><span>Pekerjaan:</span> <span className="font-medium text-slate-800">{warga.nama_pekerjaan || '-'}</span></div>
-                            </div>
-                        </td>
-
-                        {/* KOLOM SKOR */}
-                        <td className="p-6 text-center">
-                            <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 print:text-black">
-                                {warga.skor_saw ? warga.skor_saw.toFixed(4) : '0.000'}
+                        {/* SKOR */}
+                        <td className="p-6 text-center print:border print:border-black">
+                            <span className="text-xl font-extrabold text-indigo-600 print:text-black">
+                                {warga.skor_saw ? Number(warga.skor_saw).toFixed(4) : '0.000'}
                             </span>
                         </td>
 
-                        {/* KOLOM STATUS */}
-                        <td className="p-6 text-center">
+                        {/* STATUS */}
+                        <td className="p-6 text-center print:border print:border-black">
                             <BadgeStatus status={warga.status_kelayakan} />
                         </td>
 
-                        {/* KOLOM AKSI (Detail & Salurkan) */}
+                        {/* AKSI (HILANG SAAT PRINT) */}
                         <td className="p-6 text-center print:hidden">
-                             <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <Link href={`/warga/${warga._id}`} className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 hover:border-slate-300 transition shadow-sm">
-                                    Detail
-                                </Link>
-                                
-                                {/* Tombol Salurkan muncul jika Layak/Pending */}
-                                {warga.status_approval === 'PENDING_RW' && (
-                                    <button 
-                                        onClick={() => handleSalurkan(warga)} 
-                                        className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm flex items-center gap-1"
-                                        title="Setujui dan Salurkan Bantuan"
-                                    >
-                                        <Send size={12}/> Salurkan
-                                    </button>
-                                )}
-                             </div>
+                             <Link href={`/warga/${warga._id}`} className="text-blue-600 hover:underline font-bold text-xs">Detail</Link>
                         </td>
                     </tr>
                 ))}
             </tbody>
             </table>
         </div>
+
+        {/* --- FOOTER TANDA TANGAN (KHUSUS PDF/PRINT) --- */}
+        <div className="hidden print:flex justify-end mt-10 mr-10 text-black">
+            <div className="text-center">
+                <p className="mb-20">Mengetahui,<br/>Kepala Desa Maju Jaya</p>
+                <p className="font-bold underline">BAPAK KEPALA DESA</p>
+                <p>NIP. 19871212 201001 1 003</p>
+            </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-// --- SUB COMPONENTS ---
-
-const ActionButton = ({ onClick, icon, label, color }) => (
-    <button onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition ${color}`}>
-        {icon} {label}
-    </button>
-);
-
 const BadgeStatus = ({ status }) => {
-    if (status === 'LAYAK') return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 print:border-black print:text-black">
-            <CheckCircle size={12}/> LAYAK
-        </span>
-    );
-    if (status === 'TIDAK_LAYAK') return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100 print:border-black print:text-black">
-            <XCircle size={12}/> DITOLAK
-        </span>
-    );
+    let color = "bg-slate-100 text-slate-500 border-slate-200";
+    if (status === 'LAYAK') color = "bg-emerald-100 text-emerald-700 border-emerald-200";
+    if (status === 'TIDAK_LAYAK') color = "bg-red-50 text-red-600 border-red-100";
+
+    // Tampilan Print Friendly (Clean)
     return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
-            <Layers size={12}/> PROSES
+        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${color} print:bg-transparent print:text-black print:border-black`}>
+            {status.replace('_', ' ')}
         </span>
     );
 }

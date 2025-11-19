@@ -2,66 +2,78 @@ import { NextResponse } from 'next/server';
 import dbConnect from '../../../lib/db';
 import Pengaduan from '../../../models/Pengaduan';
 import KasRT from '../../../models/KasRT';
+import Penyaluran from '../../../models/Penyaluran';
 
-// --- LOGIKA AI FILTER SEDERHANA ---
-const analisaLaporan = (teks) => {
-    const t = teks.toLowerCase();
-    let kategori = 'LAINNYA';
-    let urgensi = 'RENDAH';
-
-    // 1. Deteksi Kategori
-    if (t.includes('jalan') || t.includes('lampu') || t.includes('selokan') || t.includes('banjir') || t.includes('sampah') || t.includes('rusak')) {
-        kategori = 'INFRASTRUKTUR';
-    } else if (t.includes('maling') || t.includes('curi') || t.includes('aman') || t.includes('polisi') || t.includes('mabuk') || t.includes('tengkar')) {
-        kategori = 'KEAMANAN';
-    } else if (t.includes('bansos') || t.includes('sembako') || t.includes('sakit') || t.includes('miskin') || t.includes('dana')) {
-        kategori = 'SOSIAL';
-    } else if (t.includes('surat') || t.includes('ktp') || t.includes('kk') || t.includes('pindah')) {
-        kategori = 'ADMINISTRASI';
-    }
-
-    // 2. Deteksi Urgensi
-    if (t.includes('segera') || t.includes('bahaya') || t.includes('darurat') || t.includes('mati') || t.includes('parah') || t.includes('tolong')) {
-        urgensi = 'TINGGI';
-    } else if (t.includes('ganggu') || t.includes('bau') || t.includes('macet')) {
-        urgensi = 'SEDANG';
-    }
-
-    return { kategori, urgensi };
-};
-// ----------------------------------
-
-export async function GET() {
+export async function GET(request) {
   await dbConnect();
-  const allKas = await KasRT.find({});
   
-  const saldoKas = allKas.reduce((acc, curr) => 
-    curr.tipe === 'MASUK' ? acc + curr.nominal : acc - curr.nominal, 0
-  );
+  // 1. Cek apakah ada parameter 'type' di URL (Contoh: /api/public?type=kas)
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get('type');
 
-  const danaBansos = allKas
-    .filter(k => k.tipe === 'KELUAR' && k.keterangan.toLowerCase().includes('bansos'))
-    .reduce((acc, curr) => acc + curr.nominal, 0);
+  try {
+    // === JIKA MINTA DETAIL ===
+    if (type === 'kas') {
+        // Ambil 10 transaksi terakhir kas
+        const data = await KasRT.find({}).sort({ tanggal: -1 }).limit(10);
+        return NextResponse.json({ success: true, data });
+    }
+    
+    if (type === 'penyaluran') {
+        // Ambil 10 penyaluran terakhir
+        const data = await Penyaluran.find({}).sort({ tanggal_salur: -1 }).limit(10);
+        return NextResponse.json({ success: true, data });
+    }
 
-  return NextResponse.json({ success: true, kas_rt: saldoKas, dana_bansos: danaBansos });
+    // === JIKA MINTA RINGKASAN (DEFAULT) ===
+    
+    // Hitung Kas
+    const allKas = await KasRT.find({});
+    const saldoKas = allKas.reduce((acc, curr) => 
+      curr.tipe === 'MASUK' ? acc + curr.nominal : acc - curr.nominal, 0
+    );
+
+    // Hitung Bansos
+    const aggregasiBansos = await Penyaluran.aggregate([
+        { $group: { _id: null, total: { $sum: "$nominal" } } }
+    ]);
+    const totalBansos = aggregasiBansos.length > 0 ? aggregasiBansos[0].total : 0;
+
+    // Hitung Penerima
+    const jumlahPenerima = await Penyaluran.countDocuments();
+
+    return NextResponse.json({ 
+      success: true, 
+      kas_rt: saldoKas, 
+      dana_bansos: totalBansos,
+      total_penerima: jumlahPenerima 
+    });
+
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
 }
 
+// POST (Tetap sama, untuk kirim laporan)
 export async function POST(request) {
   await dbConnect();
   try {
     const body = await request.json();
     
-    // JALANKAN AI SEBELUM SIMPAN
-    const hasilAnalisa = analisaLaporan(body.isi_laporan);
+    const t = body.isi_laporan.toLowerCase();
+    let kategori = 'LAINNYA';
+    let urgensi = 'RENDAH';
 
-    const aduanBaru = new Pengaduan({
-        ...body,
-        kategori: hasilAnalisa.kategori,
-        urgensi: hasilAnalisa.urgensi
-    });
+    if (t.includes('jalan') || t.includes('lampu') || t.includes('rusak')) kategori = 'INFRASTRUKTUR';
+    else if (t.includes('maling') || t.includes('aman')) kategori = 'KEAMANAN';
+    else if (t.includes('bansos') || t.includes('miskin')) kategori = 'SOSIAL';
 
+    if (t.includes('segera') || t.includes('bahaya')) urgensi = 'TINGGI';
+
+    const aduanBaru = new Pengaduan({ ...body, kategori, urgensi });
     await aduanBaru.save();
-    return NextResponse.json({ success: true, message: "Laporan berhasil dikirim & dianalisis!" });
+    
+    return NextResponse.json({ success: true, message: "Laporan berhasil dikirim!" });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

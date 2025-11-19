@@ -62,7 +62,7 @@ export default function Sidebar() {
             </div>
             <div>
                 <h1 className="text-xl font-extrabold tracking-wider text-white">
-                SI-BANSOS
+                Desa Maju Jaya
                 </h1>
                 <p className="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">Sistem Terpadu</p>
             </div>
@@ -93,8 +93,8 @@ export default function Sidebar() {
       {/* --- 3. NAVIGATION MENU --- */}
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar py-2">
         
-        <SectionTitle label="Dashboard" />
-        <MenuLink href="/dashboard" active={pathname === '/dashboard'} icon={<LayoutDashboard size={18} />} label="Overview" />
+        
+        <MenuLink href="/dashboard" active={pathname === '/dashboard'} icon={<LayoutDashboard size={20} />} label="Overview" />
         
         {/* Menu dengan Badge Aspirasi */}
         <MenuLink 
@@ -106,12 +106,10 @@ export default function Sidebar() {
             badgeColor="bg-pink-500"
         />
         
-        <SectionTitle label="Manajemen Data" />
-        <MenuLink href="/data-bansos" active={pathname === '/data-bansos'} icon={<Database size={18} />} label="Data Bansos (Master)" />
-        <MenuLink href="/input-bansos" active={pathname === '/input-bansos'} icon={<UserPlus size={18} />} label="Input Warga" />
         
-        <SectionTitle label="Keuangan & Validasi" />
-        <MenuLink href="/kas-rt" active={pathname === '/kas-rt'} icon={<Wallet size={18} />} label="Kas RT" />
+        <MenuLink href="/data-bansos" active={pathname === '/data-bansos'} icon={<Database size={20} />} label="Data Bansos (Master)" />
+        <MenuLink href="/input-bansos" active={pathname === '/input-bansos'} icon={<UserPlus size={20} />} label="Input Warga" />
+        <MenuLink href="/kas-rt" active={pathname === '/kas-rt'} icon={<Wallet size={20} />} label="Kas RT" />
         
         {/* Menu dengan Badge Approval */}
         <MenuLink 
@@ -123,18 +121,17 @@ export default function Sidebar() {
             badgeColor="bg-orange-500"
         />
 
-        <SectionTitle label="Eksekusi & Laporan" />
-        <MenuLink href="/penyaluran" active={pathname === '/penyaluran'} icon={<Gift size={18} />} label="Distribusi Bantuan" />
-        <MenuLink href="/riwayat-penyaluran" active={pathname === '/riwayat-penyaluran'} icon={<History size={18} />} label="Riwayat Penyaluran" />
+      
+        <MenuLink href="/penyaluran" active={pathname === '/penyaluran'} icon={<Gift size={20} />} label="Distribusi Bantuan" />
+        <MenuLink href="/riwayat-penyaluran" active={pathname === '/riwayat-penyaluran'} icon={<History size={20} />} label="Riwayat Penyaluran" />
         
-        <SectionTitle label="Akses Publik" />
-        <MenuLink href="/" active={pathname === '/'} icon={<Home size={18} />} label="Halaman Depan" />
+        <MenuLink href="/" active={pathname === '/'} icon={<Home size={20} />} label="Halaman Depan" />
       </nav>
 
       {/* --- 4. FOOTER LOGOUT --- */}
       <div className="p-4 border-t border-slate-800 bg-[#0B1120]">
         <button onClick={handleLogout} className="group flex items-center justify-center w-full px-4 py-3 text-slate-400 hover:text-white hover:bg-red-600/90 rounded-xl transition-all duration-300 shadow-lg hover:shadow-red-900/20">
-          <LogOut size={18} className="mr-2 transition-transform group-hover:-translate-x-1" /> 
+          <LogOut size={30} className="mr-2 transition-transform group-hover:-translate-x-1" /> 
           <span className="font-bold text-sm">Log Out</span>
         </button>
       </div>
