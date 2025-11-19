@@ -69,7 +69,7 @@ export default function LoginPage() {
                     <User className="absolute left-3 top-3.5 text-slate-400" size={20} />
                     <input 
                         type="text" 
-                        placeholder="Contoh: rt01" 
+                        placeholder="Username " 
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition"
                         value={form.username}
                         onChange={(e) => setForm({...form, username: e.target.value})}

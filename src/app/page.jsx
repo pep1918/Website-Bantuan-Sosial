@@ -125,7 +125,7 @@ export default function LandingPage() {
                 <h3 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-4">Formulir Aspirasi</h3>
                 <form onSubmit={handleKirimLaporan} className="space-y-5">
                     <div className="grid grid-cols-2 gap-4">
-                        <InputGroup label="Nama (Opsional)" placeholder="Hamba Allah" 
+                        <InputGroup label="Nama (Opsional)" placeholder="" 
                             onChange={e => setLaporan({...laporan, nama_pelapor: e.target.value})} />
                         <div>
                             <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Tujuan</label>
