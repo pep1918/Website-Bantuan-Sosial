@@ -27,8 +27,6 @@ Sistem mencakup dashboard monitoring, pengelolaan data penerima, penyaluran bant
 
 ## ⚙️ Persiapan Instalasi
 
-Karena beberapa file konfigurasi sensitif tidak termasuk dalam repository, lakukan langkah-langkah berikut untuk menjalankan proyek.
-
 ### 1. Clone Repositori
 
 ```bash
