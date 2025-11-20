@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { MessageSquare, User, Clock, AlertTriangle, Construction, ShieldAlert, HeartHandshake } from 'lucide-react';
+import { MessageSquare, User, Clock, AlertTriangle, Construction, ShieldAlert, HeartHandshake, Trash2 } from 'lucide-react';
 
 export default function AspirasiPage() {
   const [aspirasi, setAspirasi] = useState([]);
@@ -8,11 +8,39 @@ export default function AspirasiPage() {
   const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = () => {
     fetch('/api/aspirasi').then(r => r.json()).then(res => {
         setAspirasi(res.data || []);
         setStats(res.stats || {});
     });
-  }, []);
+  };
+
+  // --- FITUR BARU: FUNGSI HAPUS ---
+  const handleDelete = async (id) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus aspirasi ini? Data akan hilang permanen.")) return;
+
+    try {
+        const res = await fetch(`/api/aspirasi?id=${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        
+        if (json.success) {
+            // Update state lokal langsung (hapus item dari layar) tanpa reload
+            setAspirasi(prev => prev.filter(item => item._id !== id));
+            // Opsional: Ambil ulang statistik agar angka di atas update
+            fetchData(); 
+            alert("Laporan berhasil dihapus.");
+        } else {
+            alert("Gagal menghapus data.");
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Terjadi kesalahan sistem.");
+    }
+  };
+  // -------------------------------
 
   const filteredData = filter === 'ALL' ? aspirasi : aspirasi.filter(a => a.kategori === filter);
 
@@ -70,16 +98,27 @@ export default function AspirasiPage() {
                                 </div>
                             </div>
                             
-                            {/* BADGES AI */}
-                            <div className="flex flex-col items-end gap-1">
-                                <span className={`px-2 py-1 rounded text-[10px] font-bold text-white ${getCategoryColor(item.kategori)}`}>
-                                    {item.kategori}
-                                </span>
-                                {item.urgensi === 'TINGGI' && (
-                                    <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100 animate-pulse">
-                                        <AlertTriangle size={10}/> URGENSI TINGGI
+                            {/* Right Side: Badges & Delete Button */}
+                            <div className="flex flex-col items-end gap-2">
+                                {/* BADGES AI */}
+                                <div className="flex gap-1">
+                                    <span className={`px-2 py-1 rounded text-[10px] font-bold text-white ${getCategoryColor(item.kategori)}`}>
+                                        {item.kategori}
                                     </span>
-                                )}
+                                    {item.urgensi === 'TINGGI' && (
+                                        <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100 animate-pulse">
+                                            <AlertTriangle size={10}/> URGENSI TINGGI
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                {/* TOMBOL HAPUS (Hanya muncul saat hover card atau selalu ada tergantung selera) */}
+                                <button 
+                                    onClick={() => handleDelete(item._id)}
+                                    className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition"
+                                >
+                                    <Trash2 size={12} /> Hapus Laporan
+                                </button>
                             </div>
                         </div>
 

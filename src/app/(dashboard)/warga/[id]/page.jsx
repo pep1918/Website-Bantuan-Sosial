@@ -3,11 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Printer, ArrowLeft, FileCheck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-// ====================================================================
-// PERBAIKAN DI SINI:
-// Ubah dari '@/lib/utils.js' menjadi '../../../../lib/utils'
-// Kita naik 4 level folder: [id] -> warga -> (dashboard) -> app -> src
-// ====================================================================
 import { formatRupiah } from '../../../../lib/utils'; 
 
 export default function DetailWargaPage({ params }) {
