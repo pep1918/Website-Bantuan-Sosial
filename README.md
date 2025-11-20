@@ -42,12 +42,32 @@ npm install
 Buat file .env di folder root, lalu isi:
 ```bash 
 # Koneksi MongoDB (Local atau Atlas)
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/db_bansos?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster-url/dbname
 ```
 ### 4. Membuat File Koneksi Database (src/lib/db.js)
 ```bash
 import mongoose from 'mongoose';
-const MONGODB_URI = "mongodb+srv://admin:<Password Kamu>@cluster0.pcedmmf.mongodb.net/?appName=Cluster0";
+const MONGODB_URI = import mongoose from 'mongoose';
+const MONGODB_URI = "mongodb+srv://<username>:<password>@cluster-url/dbname;
+if (!MONGODB_URI) {
+  throw new Error('Link Database belum diisi di file src/lib/db.js');
+}
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+async function dbConnect() {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    const opts = { bufferCommands: false };
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
+    });
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+export default dbConnect;
 if (!MONGODB_URI) {
   throw new Error('Link Database belum diisi di file src/lib/db.js');
 }
